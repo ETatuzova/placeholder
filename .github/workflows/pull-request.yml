@@ -38,12 +38,12 @@ jobs:
 #      always() && !cancelled()
 #    secrets: inherit
 
-  # verify-hardhat-proofs:
-  #   name: Verify Hardhat Proofs
-  #   uses: ./.github/workflows/verify-hardhat-proofs.yml
-  #   if: |
-  #     always() && !cancelled()
-  #   secrets: inherit
+  verify-hardhat-proofs:
+    name: Verify Hardhat Proofs
+    uses: ./.github/workflows/verify-hardhat-proofs.yml
+    if: |
+      always() && !cancelled()
+    secrets: inherit
 
   # build-linux-proof-producer-deb-package:
   #   name: Build and upload deb package
