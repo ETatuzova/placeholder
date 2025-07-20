@@ -127,7 +127,6 @@ class bytecode : public generic_component<FieldType, stage> {
         std::vector<TYPE> bytecode_end_witness(max_bytecode_size);
         std::vector<TYPE> is_padding(max_bytecode_size);
         std::vector<TYPE> rlc_challenge(max_bytecode_size);
-
         std::vector<TYPE> bytecode_rlc(max_bytecodes_amount);
 
         if constexpr (stage == GenerationStage::ASSIGNMENT) {
@@ -229,14 +228,9 @@ class bytecode : public generic_component<FieldType, stage> {
         }
 
         if constexpr (stage == GenerationStage::CONSTRAINTS) {
-            TYPE zero_constant = typename FieldType::value_type{0};
-            TYPE one_constant = typename FieldType::value_type{1};
-            allocate(zero_constant, 0, 0, column_type::constant);
-            allocate(one_constant, 0, 1, column_type::constant);
-
             // Row 0 is used to allow all-zeros lookups
-            copy_constrain(tag[0], zero_constant);
-            // copy_constrain(bytecode_id[0], zero_constant);
+            constrain(tag[0], "tag is 0 in row 0");
+            constrain(bytecode_id[0], "bytecode_id is 0 in row 0");
 
             auto constrain_rows = [&](TYPE c, const std::string &name = "") {
                 context_object.relative_constrain(
@@ -254,22 +248,19 @@ class bytecode : public generic_component<FieldType, stage> {
             // First row must be a header: else, it would be possible to replace
             // the first bytecode with its suffix, since checks for the initial
             // values of index and rlc_value are done on header lines.
-            copy_constrain(tag[1], zero_constant);
+            constrain(tag[1], "tag is 0 in row 1");
 
-            constrain_rows((1 - tag[1]) * (bytecode_id[1] - (bytecode_id[0] + 1)));
+            constrain_rows((1 - tag[1]) * (bytecode_id[1] - (bytecode_id[0] + 1)), "On a header bytecode_id increased");
 
             // For bytes, bytecode id and length are same as in header.
-            constrain_rows(tag[1] * (bytecode_id[1] - bytecode_id[0]),
-                           "bytecode_id validilty for bytes");
-            constrain_rows(tag[1] * (length[1] - length[0]),
-                           "length validity for bytes");
+            constrain_rows(tag[1] * (bytecode_id[1] - bytecode_id[0]), "bytecode_id doesn't change on bytes rows");
+            constrain_rows(tag[1] * (length[1] - length[0]), "length validity for bytes");
+            constrain_rows((1 - tag[1]) * (length[1] - value[1]), "value on header rows is bytecode length");
 
             // Index is 0 in headers to allow accumulated length computation.
             constrain_rows((1 - tag[1]) * index[1], "header index is 0");
             // For bytes, index values start from 0 and increment sequentially.
-            constrain_rows((1 - tag[0]) * index[1] +
-                           tag[1] * tag[0] * (index[1] - (index[0] + 1)),
-                           "byte index definition");
+            constrain_rows((1 - tag[0]) * index[1] + tag[1] * tag[0] * (index[1] - (index[0] + 1)), "byte index increased correctly");
             // Note that we can skip tag[1] factor in the first part, since
             // index is 0 in headers anyway.
 
@@ -319,7 +310,7 @@ class bytecode : public generic_component<FieldType, stage> {
             // to be present: it's ok if lookup fails with malformed assignment,
             // we only care for false positive validity checks.
             constrain_rows((1 - tag[1]) * (1 - is_padding[0]), "bytecode is completed");
-            copy_constrain(is_padding[max_bytecode_size - 1], one_constant);
+            constrain(is_padding[max_bytecode_size - 1] - 1, "last row is padding");
 
             // Lookup_table
             BOOST_LOG_TRIVIAL(trace) << "zkevm_bytecode_rlc "
