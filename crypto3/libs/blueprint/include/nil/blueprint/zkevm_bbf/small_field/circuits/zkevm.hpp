@@ -586,7 +586,7 @@ namespace nil::blueprint::bbf::zkevm_small_field{
                 }
 
                 std::vector<TYPE> tmp(5);
-                tmp[0] = context_object.relativize(evm_opcode_constraint * 2, -1);
+                tmp[0] = context_object.relativize(evm_opcode_constraint, -1);
                 tmp[1] = context_object.relativize(evm_opcode_constraint * all_states[1].pc, -1);
                 tmp[2] = context_object.relativize(evm_opcode_constraint * all_states[1].opcode, -1);
                 tmp[3] = context_object.relativize(evm_opcode_constraint, -1);

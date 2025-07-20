@@ -86,7 +86,7 @@ class bytecode_table : public generic_component<FieldType, stage> {
                 // Header
                 tag[row] = 0;
                 index[row] = current_index = 0;
-                value[row] = 0;
+                value[row] = buffer.size();
                 is_opcode[row] = 0;
                 bytecode_id[row] = i + 1;
                 ++row;

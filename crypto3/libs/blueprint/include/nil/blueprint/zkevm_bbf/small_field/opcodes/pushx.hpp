@@ -80,7 +80,7 @@ namespace nil::blueprint::bbf::zkevm_small_field{
                 for( std::size_t j = 32-x; j < 32; j++){
                     if( j < 16 ){
                         tmp = {
-                            TYPE(2),
+                            TYPE(1),
                             current_state.pc(0) + j - (32 - x) + 1,
                             A_bytes[j],
                             TYPE(0),
@@ -88,7 +88,7 @@ namespace nil::blueprint::bbf::zkevm_small_field{
                         };
                     } else {
                         tmp = {
-                            TYPE(2),
+                            TYPE(1),
                             current_state.pc(1) + j - (32 - x) + 1,
                             A_bytes[j],
                             TYPE(0),
