@@ -71,7 +71,7 @@ namespace nil::blueprint::bbf::zkevm_small_field {
                 ), "zkevm_rw_256");
                 // JUMP may be done only to JUMPDEST destination
                 lookup({
-                    TYPE(2),    // It's executed opcode, not header, not metadata
+                    TYPE(1),    // It's executed opcode, not header, not metadata
                     addr_chunks[15],
                     0x5b,       // JUMPDEST opcode
                     TYPE(1),    // is_opcode = 1

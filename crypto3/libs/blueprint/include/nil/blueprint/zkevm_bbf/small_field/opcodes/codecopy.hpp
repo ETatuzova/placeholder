@@ -304,7 +304,7 @@ namespace nil::blueprint::bbf::zkevm_small_field {
 
                 // Prove bytecode size
                 lookup({
-                    TYPE(1), // HEADER
+                    TYPE(0), // HEADER
                     TYPE(0), // PC
                     bytecode_size, // bytecode_size
                     TYPE(0), // is_opcode
