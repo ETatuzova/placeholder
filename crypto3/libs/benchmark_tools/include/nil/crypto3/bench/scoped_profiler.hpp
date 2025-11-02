@@ -39,6 +39,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <format>
 
 namespace nil::crypto3::bench::detail {
     template<std::integral T>
