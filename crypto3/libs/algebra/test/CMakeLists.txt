@@ -48,19 +48,17 @@ macro(define_compile_time_algebra_test name)
 endmacro()
 
 set(RUNTIME_TESTS_NAMES
-        "curves"
-        "short_weierstrass_coordinates"
-        "curves_static"
-        "fields"
-        "fields_static"
-        "pairing"
-        "type_traits"
-        "multiexp"
+    "curves"
+    "short_weierstrass_coordinates"
+    "curves_static"
+    "fields"
+    "fields_static"
+    "pairing"
+    "type_traits"
+    "multiexp"
+    "matrix"
+    "vector"
 )
-
-set(COMPILE_TIME_TESTS_NAMES
-        "matrix"
-        "vector")
 
 foreach(TEST_NAME ${RUNTIME_TESTS_NAMES})
     define_runtime_algebra_test(${TEST_NAME})

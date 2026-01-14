@@ -23,13 +23,14 @@
 // SOFTWARE.
 //---------------------------------------------------------------------------//
 
-#define BOOST_TEST_MODULE constexpr_matrix_test
+#define BOOST_TEST_MODULE matrix_test
 
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/data/monomorphic.hpp>
 
 #include <nil/crypto3/algebra/matrix/matrix.hpp>
+#include <nil/crypto3/algebra/matrix/dmatrix.hpp>
 #include <nil/crypto3/algebra/matrix/math.hpp>
 #include <nil/crypto3/algebra/matrix/operators.hpp>
 #include <nil/crypto3/algebra/matrix/utility.hpp>
@@ -89,3 +90,146 @@ static_assert(submat<2, 2>(m1, 1, 1) == matrix<value, 2, 2> {{{5, 6}, {8, 9}}}, 
 static_assert(rref(m1) == matrix<value, 3, 3> {{{1, 0, -1}, {0, 1, 2}, {0, 0, 0}}}, "rref");
 
 static_assert(rank(m1) == 2, "rank");
+
+BOOST_AUTO_TEST_SUITE(matrix_test)
+    using matrix_2_2 = matrix<value, 2, 2>;
+    using matrix_2_2 = matrix<value, 2, 2>;
+BOOST_AUTO_TEST_CASE(equality){
+    matrix_2_2 a = {{{1, 2}, {3, 4}}};
+    matrix_2_2 b = {{{1, 2}, {3, 4}}};
+    matrix_2_2 c = {{{5, 6}, {7, 8}}};
+    BOOST_CHECK(a == b);
+    BOOST_CHECK(a != c);
+}
+BOOST_AUTO_TEST_CASE(addition){
+
+    matrix_2_2 a = {{{1, 2}, {3, 4}}};
+    matrix_2_2 b = {{{5, 6}, {7, 8}}};
+    matrix_2_2 c = a + b;
+    matrix_2_2 result = {{{6, 8}, {10, 12}}};
+    BOOST_CHECK(c == result);
+    BOOST_CHECK(c == matrix_2_2({{{6, 8}, {10, 12}}}));
+}
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(dmatrix_test)
+using dynamic_matrix = dmatrix<value>;
+
+BOOST_AUTO_TEST_CASE(construction){
+    dynamic_matrix dm(3, 4);
+    BOOST_CHECK(dm.column_size == 3);
+    BOOST_CHECK(dm.row_size == 4);
+
+    dynamic_matrix dm_init(2, 3, {{ {1, 2, 3}, {4, 5, 6} }});
+    BOOST_CHECK(dm_init.column_size == 2);
+    BOOST_CHECK(dm_init.row_size == 3);
+    BOOST_CHECK(dm_init[0][0] == 1);
+    BOOST_CHECK(dm_init[0][1] == 2);
+    BOOST_CHECK(dm_init[0][2] == 3);
+    BOOST_CHECK(dm_init[1][0] == 4);
+    BOOST_CHECK(dm_init[1][1] == 5);
+    BOOST_CHECK(dm_init[1][2] == 6);
+
+    auto row = dm_init.row(1);
+    BOOST_CHECK(row == dynamic_matrix::row_type({4, 5, 6}));
+
+    auto column = dm_init.column(2);
+    BOOST_CHECK(column == dynamic_matrix::row_type({3, 6}));
+}
+
+BOOST_AUTO_TEST_CASE(equality){
+    dynamic_matrix a(2, 2, {{ {1, 2}, {3, 4} }});
+    dynamic_matrix b(2, 2, {{ {1, 2}, {3, 4} }});
+    dynamic_matrix c(2, 2, {{ {5, 6}, {7, 8} }});
+    BOOST_CHECK(a == b);
+    BOOST_CHECK(a != c);
+}
+
+BOOST_AUTO_TEST_CASE(addition){
+    dynamic_matrix a(2, 3, {{ {1, 2, 3}, {4, 5, 6} }});
+    dynamic_matrix b(2, 3, {{ {5, 6, 7}, {8, 9, 10} }});
+    dynamic_matrix c = a + b;
+    dynamic_matrix result(2, 3, {{ {6, 8, 10}, {12, 14, 16} }});
+    BOOST_CHECK(c == result);
+}
+
+BOOST_AUTO_TEST_CASE(subtraction){
+    dynamic_matrix a(3, 2, {{ {5, 6}, {7, 8}, {9, 10} }});
+    dynamic_matrix b(3, 2, {{ {1, 2}, {3, 4}, {5, 6} }});
+    dynamic_matrix c = a - b;
+    dynamic_matrix result(3, 2, {{ {4, 4}, {4, 4}, {4, 4} }});
+    BOOST_CHECK(c == result);
+}
+
+BOOST_AUTO_TEST_CASE(multiplication){
+    dynamic_matrix a(2, 3, {{ {1, 2, 3}, {4, 5, 6} }});
+    dynamic_matrix b(3, 4, {{ {7, 8, 9, 10}, {11, 12, 13, 14}, {15, 16, 17, 18} }});
+    dynamic_matrix c = a * b;
+    dynamic_matrix result(2, 4, {{ {74, 80, 86, 92}, {173, 188, 203, 218} }});
+    BOOST_CHECK(c == result);
+
+    dynamic_matrix d(3, 3, {{ {1, 2, 3}, {0, 1, 4}, {5, 6, 0} }});
+    dynamic_matrix e = identity_dmatrix<value>(3);
+    dynamic_matrix f = d * e;
+    BOOST_CHECK(f == d);
+}
+
+BOOST_AUTO_TEST_CASE(determinant){
+    dynamic_matrix a(2, 2, {{ {4, 6}, {3, 8} }});
+    value det = a.determinant();
+    BOOST_CHECK_EQUAL(det, 14);
+
+    // Test determinant of 3x3 matrix
+    dynamic_matrix b(3, 3, {{ {6, 1, 1}, {4, -2, 5}, {2, 8, 7} }});
+    value det_b = b.determinant();
+    BOOST_CHECK_EQUAL(det_b, -306);
+
+    // Test zero determinant
+    dynamic_matrix c(2, 2, {{ {1, 2}, {2, 4} }});
+    value det_c = c.determinant();
+    BOOST_CHECK_EQUAL(det_c, 0);
+
+    dynamic_matrix d(1, 1, {{ {5} }});
+    value det_d = d.determinant();
+    BOOST_CHECK_EQUAL(det_d, 5);
+
+    dynamic_matrix e(0, 0);
+    value det_e = e.determinant();
+    BOOST_CHECK_EQUAL(det_e, 1);
+
+    dynamic_matrix id = identity_dmatrix<value>(5);
+    value det_id = id.determinant();
+    BOOST_CHECK_EQUAL(det_id, 1);
+}
+
+BOOST_AUTO_TEST_CASE(rank){
+    dynamic_matrix a(3, 3, {{ {1, 2, 3}, {4, 5, 6}, {7, 8, 9} }});
+    std::size_t rank_a = a.rank();
+    BOOST_CHECK_EQUAL(rank_a, 2);
+
+    dynamic_matrix b(2, 3, {{ {1, 2, 3}, {4, 5, 6} }});
+    std::size_t rank_b = b.rank();
+    BOOST_CHECK_EQUAL(rank_b, 2);
+
+    dynamic_matrix c(3, 2, {{ {1, 2}, {2, 4}, {3, 6} }});
+    std::size_t rank_c = c.rank();
+    BOOST_CHECK_EQUAL(rank_c, 1);
+
+    dynamic_matrix d(2, 2, {{ {1, 0}, {0, 1} }});
+    std::size_t rank_d = d.rank();
+    BOOST_CHECK_EQUAL(rank_d, 2);
+
+    dynamic_matrix e(0, 0);
+    std::size_t rank_e = e.rank();
+    BOOST_CHECK_EQUAL(rank_e, 0);
+
+    dynamic_matrix f(3, 3, {{ {0, 0, 0}, {0, 0, 0}, {0, 0, 0} }});
+    std::size_t rank_f = f.rank();
+    BOOST_CHECK_EQUAL(rank_f, 0);
+
+    dynamic_matrix id = identity_dmatrix<value>(10);
+    std::size_t rank_id = id.rank();
+    BOOST_CHECK_EQUAL(rank_id, 10);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
