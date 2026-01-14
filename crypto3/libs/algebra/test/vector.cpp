@@ -1,6 +1,7 @@
 //---------------------------------------------------------------------------//
 // Copyright (c) 2020-2021 Mikhail Komarov <nemo@nil.foundation>
 // Copyright (c) 2020-2021 Nikita Kaskov <nbering@nil.foundation>
+// Copyright (c) 2025 Elena Tatuzova <elena@allocinit.xyz>
 //
 // MIT License
 //
@@ -30,6 +31,7 @@
 #include <boost/test/data/monomorphic.hpp>
 
 #include <nil/crypto3/algebra/vector/vector.hpp>
+#include <nil/crypto3/algebra/vector/dvector.hpp>
 #include <nil/crypto3/algebra/vector/math.hpp>
 #include <nil/crypto3/algebra/vector/operators.hpp>
 #include <nil/crypto3/algebra/vector/utility.hpp>
@@ -68,3 +70,35 @@ static_assert(generate<4>([](auto i) { return value(i * i); }) == vector<value, 
 static_assert(vector {1, 2, 3} == slice<3>(vector {1, 2, 3, 4}), "slice-no offset");
 
 static_assert(vector {2, 3, 4} == slice<3>(vector {1, 2, 3, 4}, 1), "slice with offset");
+
+
+BOOST_AUTO_TEST_SUITE(dvector_test)
+    using dynamic_vector = dvector<value>;
+
+BOOST_AUTO_TEST_CASE(addition){
+      dynamic_vector a = {1, 2, 3};
+      dynamic_vector b = {4, 5, 6};
+      dynamic_vector c = a + b;
+      dynamic_vector result = {5, 7, 9};
+      BOOST_CHECK(c == result);
+      BOOST_CHECK(c == dynamic_vector({5, 7, 9}));
+}
+
+BOOST_AUTO_TEST_CASE(subtraction){
+      dynamic_vector a = {7, 7, 6};
+      dynamic_vector b = {1, 2, 3};
+      dynamic_vector c = a - b;
+      dynamic_vector result = {6, 5, 3};
+      BOOST_CHECK(c == result);
+      BOOST_CHECK(c == dynamic_vector({6, 5, 3}));
+}
+
+BOOST_AUTO_TEST_CASE(multiplication){
+      dynamic_vector a = {1, 2, 3};
+      value scalar = 3;
+      dynamic_vector c = a * scalar;
+      dynamic_vector result = {3, 6, 9};
+      BOOST_CHECK(c == result);
+      BOOST_CHECK(c == dynamic_vector({3, 6, 9}));
+}
+BOOST_AUTO_TEST_SUITE_END()
