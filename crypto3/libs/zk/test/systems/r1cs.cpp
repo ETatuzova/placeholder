@@ -27,6 +27,9 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/data/monomorphic.hpp>
+#include <boost/property_tree/ptree.hpp>
+
+#include <nil/crypto3/test_tools/extended_log_fixture.hpp>
 
 #include <nil/crypto3/algebra/curves/alt_bn128.hpp>
 #include <nil/crypto3/algebra/fields/arithmetic_params/alt_bn128.hpp>
@@ -36,6 +39,8 @@
 
 #include <nil/crypto3/zk/snark/arithmetization/r1cs/r1cs.hpp>
 
+
+BOOST_GLOBAL_FIXTURE(ExtendedLogFixture);
 BOOST_AUTO_TEST_SUITE(r1cs_test_suite)
     using FieldType = typename nil::crypto3::algebra::curves::alt_bn128_254::scalar_field_type;
     using value = typename FieldType::value_type;
@@ -66,8 +71,8 @@ BOOST_AUTO_TEST_CASE(r1cs_basic_test) {
     constraint2.C[0] = 1;
 
     constraint_system_type r1cs_system({constraint, constraint1, constraint2}, 3);
-    BOOST_CHECK(r1cs_system.sat_check({0, 1, 2}));
-    BOOST_CHECK(r1cs_system.sat_check({1, 2, 6}));
-    BOOST_CHECK(!r1cs_system.sat_check({1, 2, 5}));
+    BOOST_CHECK(r1cs_system.satisfiability_check({0, 1, 2}));
+    BOOST_CHECK(r1cs_system.satisfiability_check({1, 2, 6}));
+    BOOST_CHECK(!r1cs_system.satisfiability_check({1, 2, 5}));
 }
 BOOST_AUTO_TEST_SUITE_END()

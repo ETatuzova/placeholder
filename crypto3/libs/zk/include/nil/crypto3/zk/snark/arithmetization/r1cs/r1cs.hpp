@@ -42,10 +42,11 @@ namespace nil::crypto3::zk::r1cs {
         using compact_vector_type = std::map<std::size_t, value_type>;
 
         // 0-th item in A,B,C corresponds to the constant term
+        // Standard A,B,C
         struct r1cs_constraint {
-            compact_vector_type A;
-            compact_vector_type B;
-            compact_vector_type C;
+            compact_vector_type A;  // Quadratic part variables coefficients
+            compact_vector_type B;  // Quadratic part variables coefficients
+            compact_vector_type C;  // Linear part variables coefficients
         };
 
         using constraints_container_type = std::vector<r1cs_constraint>;
@@ -83,7 +84,7 @@ namespace nil::crypto3::zk::r1cs {
         }
 
         // Variables are indexed from 1 to n, 0 is reserved for the constant term
-        bool sat_check(const std::vector<value_type> &assignment) const {
+        bool satisfiability_check(const std::vector<value_type> &assignment) const {
             assert( assignment.size() >= _num_variables );
             std::size_t i = 0;
 
@@ -108,12 +109,16 @@ namespace nil::crypto3::zk::r1cs {
                 }
 
                 if( a * b != c ){
-                    BOOST_LOG_TRIVIAL(trace) << "R1CS constraint " << i << " not satisfied: "
+                    BOOST_LOG_TRIVIAL(debug) << "R1CS constraint " << i << " not satisfied: "
                         << a << " * " << b << " != " << c;
                     return false;
                 }
                 i++;
             }
+            return true;
+        }
+
+        bool projective_safety_symmetric_check() const {
             return true;
         }
 
