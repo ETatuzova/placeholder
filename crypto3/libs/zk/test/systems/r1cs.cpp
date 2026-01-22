@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_SUITE(r1cs_test_suite)
     using constraint_type = typename nil::crypto3::zk::r1cs::r1cs_constraint_system<FieldType>::r1cs_constraint;
     using constraint_system_type = typename nil::crypto3::zk::r1cs::r1cs_constraint_system<FieldType>;
 
-BOOST_AUTO_TEST_CASE(r1cs_basic_test) {
+BOOST_AUTO_TEST_CASE(basic_test) {
     // (1 + x1) = x2
     constraint_type constraint;
     constraint.A[0] = 1;
@@ -74,5 +74,25 @@ BOOST_AUTO_TEST_CASE(r1cs_basic_test) {
     BOOST_CHECK(r1cs_system.satisfiability_check({0, 1, 2}));
     BOOST_CHECK(r1cs_system.satisfiability_check({1, 2, 6}));
     BOOST_CHECK(!r1cs_system.satisfiability_check({1, 2, 5}));
+}
+
+BOOST_AUTO_TEST_CASE(quadratic_symmetry_test) {
+    // symmetric constraint: (3 +x1) * (2 + x1) = x_1
+    constraint_type symmetric_constraint;
+    symmetric_constraint.A[0] = 3;
+    symmetric_constraint.A[1] = 1;
+    symmetric_constraint.B[0] = 2;
+    symmetric_constraint.B[1] = 1;
+    symmetric_constraint.C[2] = 1;
+    BOOST_CHECK(symmetric_constraint.is_quadratically_symmetric());
+
+    // non-symmetric constraint: (1 + 3 * x1) * (1 + 2 * x1) = x3
+    constraint_type non_symmetric_constraint;
+    non_symmetric_constraint.A[0] = 1;
+    non_symmetric_constraint.A[1] = 3;
+    non_symmetric_constraint.B[0] = 1;
+    non_symmetric_constraint.B[1] = 2;
+    non_symmetric_constraint.C[3] = 1;
+    BOOST_CHECK(!non_symmetric_constraint.is_quadratically_symmetric());
 }
 BOOST_AUTO_TEST_SUITE_END()

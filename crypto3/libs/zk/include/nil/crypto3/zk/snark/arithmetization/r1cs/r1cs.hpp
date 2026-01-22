@@ -47,6 +47,17 @@ namespace nil::crypto3::zk::r1cs {
             compact_vector_type A;  // Quadratic part variables coefficients
             compact_vector_type B;  // Quadratic part variables coefficients
             compact_vector_type C;  // Linear part variables coefficients
+
+            bool is_quadratically_symmetric() const {
+                BOOST_ASSERT(A.size() == B.size());
+
+                for( std::size_t i = 1; i < A.size(); i++ ){
+                    if( A.at(i) != B.at(i) ){
+                        return false;
+                    }
+                }
+                return true;
+            }
         };
 
         using constraints_container_type = std::vector<r1cs_constraint>;
