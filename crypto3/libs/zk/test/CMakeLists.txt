@@ -75,6 +75,7 @@ set(TESTS_NAMES
     "systems/plonk/placeholder/placeholder_hashes"
     "systems/plonk/placeholder/placeholder_curves"
     "systems/plonk/placeholder/placeholder_quotient_polynomial_chunks"
+    "systems/r1cs"
 
     "transcript/transcript"
 
