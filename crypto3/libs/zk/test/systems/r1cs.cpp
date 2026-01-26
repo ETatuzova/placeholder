@@ -94,5 +94,95 @@ BOOST_AUTO_TEST_CASE(quadratic_symmetry_test) {
     non_symmetric_constraint.B[1] = 2;
     non_symmetric_constraint.C[3] = 1;
     BOOST_CHECK(!non_symmetric_constraint.is_quadratically_symmetric());
+
+    constraint_type c;
+    c.A[0] = 1;
+    c.A[1] = 2;
+    c.B[0] = 3;
+    c.B[2] = 2;
+    BOOST_CHECK(!c.is_quadratically_symmetric());
+}
+
+BOOST_AUTO_TEST_CASE(infinity_solution_test){
+    constraint_type c0, c1;
+    c0.A[0] = 1;
+    c0.A[1] = 1;
+    c0.B[0] = 1;
+    c0.B[2] = 2;
+    c0.C[2] = 1;
+
+    c1.A[0] = 1;
+    c1.A[2] = 1;
+    c1.B[0] = 1;
+    c1.B[2] = 1;
+    c1.C[3] = 1;
+    constraint_system_type r1cs_system({c0, c1}, 3);
+    BOOST_CHECK(r1cs_system.infinity_solution_check({0, 0, 0}));
+    BOOST_CHECK(r1cs_system.infinity_solution_check({1, 0, 0}));
+    BOOST_CHECK(!r1cs_system.infinity_solution_check({0, 1, 0}));
+}
+
+BOOST_AUTO_TEST_CASE(non_quadratic_variables_list_test){
+    constraint_type c0, c1;
+    c0.A[0] = 1;
+    c0.A[1] = 1;
+    c0.B[0] = 1;
+    c0.B[2] = 2;
+    c0.C[2] = 1;
+    c0.C[4] = 10;
+
+    c1.A[0] = 1;
+    c1.A[2] = 1;
+    c1.B[0] = 1;
+    c1.B[2] = 1;
+    c1.C[3] = 1;
+    constraint_system_type r1cs_system({c0, c1}, 3);
+    std::set<std::size_t> non_quadratic_vars = r1cs_system.non_quadratic_variables_list();
+    for(std::size_t v: non_quadratic_vars){
+        BOOST_LOG_TRIVIAL(debug) << "Non quadratic variable: " << v;
+    }
+    BOOST_CHECK(non_quadratic_vars.size() == 2);
+    BOOST_CHECK(non_quadratic_vars.find(1) == non_quadratic_vars.end());
+    BOOST_CHECK(non_quadratic_vars.find(2) == non_quadratic_vars.end());
+    BOOST_CHECK(non_quadratic_vars.find(3) != non_quadratic_vars.end());
+    BOOST_CHECK(non_quadratic_vars.find(4) != non_quadratic_vars.end());
+
+    std::vector<value> inifinity_solution(5);
+    for(std::size_t v: non_quadratic_vars){
+        inifinity_solution[v - 1] = value::one();
+    }
+    BOOST_CHECK(r1cs_system.infinity_solution_check(inifinity_solution));
+}
+
+BOOST_AUTO_TEST_CASE(symmetric_part_matrix_test){
+    constraint_type c0, c1, c2;
+    // symmetric
+    c0.A[0] = 1;
+    c0.A[1] = 1;
+    c0.B[0] = 1;
+    c0.B[1] = 1;
+    c0.C[2] = 1;
+
+    // non-symmetric
+    c1.A[0] = 1;
+    c1.A[2] = 1;
+    c1.B[0] = 1;
+    c1.B[2] = 2;
+    c1.C[3] = 1;
+
+    // symmetric
+    c2.A[0] = 2;
+    c2.A[3] = 1;
+    c2.B[0] = 3;
+    c2.B[3] = 1;
+    c2.C[4] = 1;
+
+    constraint_system_type r1cs_system({c0, c1, c2}, 4);
+    auto [indices, A] = r1cs_system.get_symmetric_part_matrix();
+    BOOST_CHECK(indices.size() == 2);
+    BOOST_CHECK(indices == std::vector<std::size_t>({1, 3}));
+
+    nil::crypto3::algebra::dmatrix<value> expected_A(2, 2, { {1, 0}, {0, 1} });
+    BOOST_CHECK(A == expected_A);
 }
 BOOST_AUTO_TEST_SUITE_END()

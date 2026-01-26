@@ -28,8 +28,9 @@
 #include <memory>
 #include <tuple>
 #include <map>
+#include <set>
 
-// #include <crypto3/libs/algebra/include/nil/crypto3/algebra/vector/dvector.hpp>
+#include <nil/crypto3/algebra/matrix/dmatrix.hpp>
 
 /** R1CS constraint system classes */
 
@@ -51,8 +52,10 @@ namespace nil::crypto3::zk::r1cs {
             bool is_quadratically_symmetric() const {
                 BOOST_ASSERT(A.size() == B.size());
 
-                for( std::size_t i = 1; i < A.size(); i++ ){
-                    if( A.at(i) != B.at(i) ){
+                for( const auto &item_a : A ){
+                    if( item_a.first == 0 ) continue; // Skip constant term
+                    auto it_b = B.find(item_a.first);
+                    if( it_b == B.end() || it_b->second != item_a.second ){
                         return false;
                     }
                 }
@@ -129,8 +132,89 @@ namespace nil::crypto3::zk::r1cs {
             return true;
         }
 
-        bool projective_safety_symmetric_check() const {
+        bool infinity_solution_check(const std::vector<value_type> &assignment) const {
+            assert( assignment.size() >= _num_variables );
+            std::size_t i = 0;
+
+            // Variables numeration starts from 1, but in vector it starts from 0
+            for( const auto &constraint : _constraints ){
+                value_type a = 0;
+                for( const auto &item : constraint.A ){
+                    if( item.first == 0 ) continue;
+                    a += assignment[item.first-1] * item.second;
+                }
+
+                value_type b = 0;
+                for( const auto &item : constraint.B ){
+                    if( item.first == 0 ) continue;
+                    b += assignment[item.first-1] * item.second;
+                }
+                if( a*b != 0 ) {
+                    BOOST_LOG_TRIVIAL(debug) << "R1CS constraint " << i << " non zero on infinity: "
+                        << a << " * " << b << " != 0";
+                    return false;
+                }
+                i++;
+            }
             return true;
+        }
+
+        // bool projective_safety_symmetric_check() const {
+        //     return true;
+        // }
+
+        std::set<std::size_t> non_quadratic_variables_list() const {
+            std::set<std::size_t> result;
+            for( std::size_t i = 1; i < _num_variables + 1; i++ ){
+                result.insert(i);
+            }
+            for( const auto constraint: _constraints ){
+                for( const auto &item_a : constraint.A ){
+                    if( item_a.first == 0 ) continue; // Skip constant term
+                    if( item_a.second == 0 ) continue;
+                    result.erase(item_a.first);
+                }
+                for( const auto &item_b : constraint.B ){
+                    if( item_b.first == 0 ) continue; // Skip constant term
+                    if( item_b.second == 0 ) continue;
+                    result.erase(item_b.first);
+                }
+            }
+            return result;
+        }
+
+        std::set<std::size_t> blessed_variables_list() const {
+            std::set<std::size_t> result;
+        }
+
+        std::pair<std::vector<std::size_t>, nil::crypto3::algebra::dmatrix<value_type>> get_symmetric_part_matrix() const {
+            std::vector<std::size_t> indices;
+            std::vector<r1cs_constraint> symmetric_constraints;
+            for( const auto &constraint: _constraints ){
+                if(!constraint.is_quadratically_symmetric()){
+                    continue;
+                }
+                for( const auto &item_a : constraint.A ){
+                    if( item_a.first == 0 ) continue; // Skip constant term
+                    if( std::find(indices.begin(), indices.end(), item_a.first) == indices.end() ){
+                        if( item_a.second != 0 ) indices.push_back(item_a.first);
+                    }
+                }
+                symmetric_constraints.push_back(constraint);
+            }
+
+            std::size_t N = symmetric_constraints.size();
+            std::size_t M = indices.size();
+            nil::crypto3::algebra::dmatrix<value_type> A(N, M);
+            for( std::size_t i = 0; i < N; i++ ){
+                for( const auto [k,v]: symmetric_constraints[i].A ){
+                    if( k == 0 ) continue;
+                    if( v == 0 ) continue;
+                    A[i][std::distance(indices.begin(), std::find(indices.begin(), indices.end(), k))] = v;
+                }
+            }
+
+            return std::make_pair(indices, A);
         }
 
     protected:
