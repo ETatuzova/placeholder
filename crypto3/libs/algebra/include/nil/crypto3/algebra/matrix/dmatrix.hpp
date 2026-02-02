@@ -59,6 +59,14 @@ namespace nil::crypto3::algebra {
         dmatrix(std::size_t N, std::size_t M, const data_type &init_data)
             : column_size(N), row_size(M), dvector<dvector<T>>(init_data) {}
 
+        std::size_t rows_amount() const {
+            return column_size;
+        }
+
+        std::size_t columns_amount() const {
+            return row_size;
+        }
+
 
         dvector<T> row(std::size_t i) const {
             dvector<T> result = (*this)[i];
