@@ -267,6 +267,7 @@ namespace nil::crypto3::zk::r1cs {
                 for( const auto [k,v]: symmetric_constraints[i].A ){
                     if( k == 0 ) continue;
                     if( v == 0 ) continue;
+                    if( zerofied_vars.contains(k) ) continue;
                     A[i][std::distance(indices.begin(), std::find(indices.begin(), indices.end(), k))] = v;
                 }
             }
