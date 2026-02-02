@@ -68,7 +68,7 @@ namespace nil::crypto3::zk::r1cs {
                 }
             }
 
-            bool is_quadratically_symmetric() const {
+            bool is_quadratically_symmetric(std::set<std::size_t> zerofied_vars = {}) const {
                 std::set<std::size_t> A_key_set;
                 std::set<std::size_t> B_key_set;
 
@@ -80,6 +80,10 @@ namespace nil::crypto3::zk::r1cs {
 
                 A_key_set.erase(0); // Remove constant term
                 B_key_set.erase(0); // Remove constant term
+                for(auto v: zerofied_vars){
+                    A_key_set.erase(v); // Remove zerofied vars
+                    B_key_set.erase(v); //
+                }
 
                 if( A_key_set != B_key_set ){
                     return false;
@@ -226,15 +230,29 @@ namespace nil::crypto3::zk::r1cs {
             std::set<std::size_t> result;
         }
 
-        std::pair<std::vector<std::size_t>, nil::crypto3::algebra::dmatrix<value_type>> get_symmetric_part_matrix() const {
+        std::pair<std::vector<std::size_t>, nil::crypto3::algebra::dmatrix<value_type>> get_symmetric_part_matrix(std::set<std::size_t> zerofied_vars = {}) const {
             std::vector<std::size_t> indices;
             std::vector<r1cs_constraint> symmetric_constraints;
             for( const auto &constraint: _constraints ){
-                if(!constraint.is_quadratically_symmetric()){
+                if(!constraint.is_quadratically_symmetric(zerofied_vars)){
                     continue;
                 }
+
+                // Delete zero constraints. It may significantly reduce the size of the matrix
+                bool is_empty = true;
                 for( const auto &item_a : constraint.A ){
                     if( item_a.first == 0 ) continue; // Skip constant term
+                    if(zerofied_vars.contains(item_a.first)) continue;
+                    if( item_a.second != 0 ) {
+                        is_empty = false;
+                        break;
+                    }
+                }
+                if( is_empty ) continue;
+
+                for( const auto &item_a : constraint.A ){
+                    if( item_a.first == 0 ) continue; // Skip constant term
+                    if(zerofied_vars.contains(item_a.first)) continue;
                     if( std::find(indices.begin(), indices.end(), item_a.first) == indices.end() ){
                         if( item_a.second != 0 ) indices.push_back(item_a.first);
                     }

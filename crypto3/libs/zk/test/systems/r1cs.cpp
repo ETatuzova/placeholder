@@ -174,15 +174,19 @@ BOOST_AUTO_TEST_CASE(symmetric_part_matrix_test){
     // non-symmetric
     c1.A[0] = 1;
     c1.A[2] = 1;
+    c1.A[4] = 5;
     c1.B[0] = 1;
     c1.B[2] = 2;
+    c1.B[4] = 5;
     c1.C[3] = 1;
 
     // symmetric
     c2.A[0] = 2;
-    c2.A[3] = 1;
+    c2.A[1] = 3;
+    c2.A[3] = 9;
     c2.B[0] = 3;
-    c2.B[3] = 1;
+    c2.B[1] = 3;
+    c2.B[3] = 9;
     c2.C[4] = 1;
 
     constraint_system_type r1cs_system({c0, c1, c2}, 4);
@@ -190,7 +194,18 @@ BOOST_AUTO_TEST_CASE(symmetric_part_matrix_test){
     BOOST_CHECK(indices.size() == 2);
     BOOST_CHECK(indices == std::vector<std::size_t>({1, 3}));
 
-    nil::crypto3::algebra::dmatrix<value> expected_A(2, 2, { {1, 0}, {0, 1} });
+    nil::crypto3::algebra::dmatrix<value> expected_A(2, 2, { {1, 0}, {3, 9} });
     BOOST_CHECK(A == expected_A);
+
+    auto [indices_with_zerofied, A_with_zerofied] = r1cs_system.get_symmetric_part_matrix({2});
+    BOOST_CHECK(indices_with_zerofied.size() == 3);
+    BOOST_CHECK(indices_with_zerofied == std::vector<std::size_t>({1, 4, 3}));
+    nil::crypto3::algebra::dmatrix<value> expected_A_with_zerofied(3, 3, { {1, 0,0}, {0, 5,0}, {3,0,9} });
+
+    auto [indices_with_zerofied_2_3, A_with_zerofied_2_3] = r1cs_system.get_symmetric_part_matrix({2,3});
+    BOOST_CHECK(indices_with_zerofied_2_3.size() == 2);
+    BOOST_CHECK(indices_with_zerofied_2_3 == std::vector<std::size_t>({1, 4}));
+    nil::crypto3::algebra::dmatrix<value> expected_A_with_zerofied_2_3(3, 2, { {1, 0}, {0, 5}, {3,0} });
+    BOOST_CHECK(A_with_zerofied_2_3 == expected_A_with_zerofied_2_3);
 }
 BOOST_AUTO_TEST_SUITE_END()

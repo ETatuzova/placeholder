@@ -100,7 +100,7 @@ namespace nil::crypto3::zk::r2cs {
             }
 
             // One part is linear, another is symmetricaly quadratic
-            bool is_r1_quadratically_symmetric() const {
+            bool is_r1_quadratically_symmetric(std::set<std::size_t> zerified_vars = {}) const {
                 // Case 1. A or B are constant.
                 if( is_C_constant() || is_D_constant() ){
                     std::set<std::size_t> A_key_set;
@@ -114,6 +114,10 @@ namespace nil::crypto3::zk::r2cs {
 
                     A_key_set.erase(0); // Remove constant term
                     B_key_set.erase(0); // Remove constant term
+                    for( auto v: zerified_vars ){
+                        A_key_set.erase(v); // Remove zerofied vars
+                        B_key_set.erase(v); //
+                    }
 
                     if( A_key_set != B_key_set ){
                         return false;
@@ -325,23 +329,36 @@ namespace nil::crypto3::zk::r2cs {
             std::set<std::size_t> result;
         }
 
-        std::pair<std::vector<std::size_t>, nil::crypto3::algebra::dmatrix<value_type>> get_symmetric_part_matrix() const {
+        std::pair<std::vector<std::size_t>, nil::crypto3::algebra::dmatrix<value_type>> get_symmetric_part_matrix(std::set<std::size_t> zerofied_vars = {}) const {
             std::vector<std::size_t> indices;
             std::vector<compact_vector_type> symmetric_constraints;
             for( const auto &constraint: _constraints ){
                 compact_vector_type relevant_part = {};
-                if(!constraint.is_r1_quadratically_symmetric()) continue;
+                if(!constraint.is_r1_quadratically_symmetric(zerofied_vars)) continue;
                 if( constraint.is_A_constant() || constraint.is_B_constant() ){
                     relevant_part = constraint.C;
-                    symmetric_constraints.push_back(constraint.C);
                 }
                 if( constraint.is_C_constant() || constraint.is_D_constant() ){
                     relevant_part = constraint.A;
-                    symmetric_constraints.push_back(constraint.A);
                 }
 
+                // Clean zerofied constraints. May significantly reduce the matrix size
+                bool is_empty = true;
                 for( const auto &item : relevant_part ){
                     if( item.first == 0 ) continue; // Skip constant term
+                    if( zerofied_vars.contains(item.first)) continue;
+                    if( item.second != 0 ) {
+                        is_empty = false;
+                        break;
+                    }
+                }
+                if( is_empty ) continue;
+                symmetric_constraints.push_back(relevant_part);
+
+                // Update variables indices
+                for( const auto &item : relevant_part ){
+                    if( item.first == 0 ) continue; // Skip constant term
+                    if(zerofied_vars.contains(item.first)) continue;
                     if( std::find(indices.begin(), indices.end(), item.first) == indices.end() ){
                         if( item.second != 0 ) indices.push_back(item.first);
                     }
@@ -355,6 +372,7 @@ namespace nil::crypto3::zk::r2cs {
                 for( const auto [k,v]: symmetric_constraints[i] ){
                     if( k == 0 ) continue;
                     if( v == 0 ) continue;
+                    if( zerofied_vars.contains(k) ) continue;
                     A[i][std::distance(indices.begin(), std::find(indices.begin(), indices.end(), k))] = v;
                 }
             }
