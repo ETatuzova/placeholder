@@ -58,13 +58,7 @@ namespace nil::crypto3::algebra {
 
         // Constructor with initialization
         dmatrix(std::size_t N, std::size_t M, const data_type &init_data)
-            : column_size(N), row_size(M), dvector<dvector<T>>(N, dvector<T>(M)) {
-                for (std::size_t i = 0; i < N; ++i) {
-                    for (std::size_t j = 0; j < M; ++j) {
-                        (*this)[i][j] = init_data[i][j];
-                    }
-                }
-            }
+            : column_size(N), row_size(M), dvector<dvector<T>>(init_data) {}
 
         std::size_t rows_amount() const {
             return column_size;
@@ -196,8 +190,8 @@ namespace nil::crypto3::algebra {
                         tmp[j][k] -= factor * tmp[current_row][k];
                     }
                 }
-                rank++;
                 current_row++;
+                rank++;
             }
 
             return rank;
@@ -280,6 +274,22 @@ namespace nil::crypto3::algebra {
         std::size_t min_size = std::min(N, M);
         for (std::size_t i = 0; i < min_size; ++i) {
             result[i][i] = 1;
+        }
+        return result;
+    }
+
+    template<typename T>
+    dmatrix<T> row_dmatrix(const dvector<T> &vec) {
+        dmatrix<T> result(1, vec.size());
+        result[0] = vec;
+        return result;
+    }
+
+    template<typename T>
+    dmatrix<T> column_dmatrix(const dvector<T> &vec) {
+        dmatrix<T> result(vec.size(), 1);
+        for (std::size_t i = 0; i < vec.size(); ++i) {
+            result[i][0] = vec[i];
         }
         return result;
     }

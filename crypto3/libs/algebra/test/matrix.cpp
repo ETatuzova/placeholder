@@ -243,16 +243,12 @@ BOOST_AUTO_TEST_CASE(rank){
     std::size_t rank_full = full_rank.rank();
     BOOST_CHECK_EQUAL(rank_full, 3);
 
-    dynamic_matrix one_row(1, 3, {{ {1, -2, 1} }});
+    dynamic_matrix one_row = row_dmatrix<value>({{1, -2, 1}});
     std::size_t rank_one_row = one_row.rank();
     BOOST_CHECK_EQUAL(rank_one_row, 1);
 
     // TODO: Fix matrix brace initializer
-    dynamic_matrix one_column(3, 1);
-    one_column[0][0] = 1;
-    one_column[1][0] = -2;
-    one_column[2][0] = 1;
-
+    dynamic_matrix one_column = column_dmatrix<value>({{1}, {-2}, {1}});
     std::size_t rank_one_column = one_column.rank();
     BOOST_CHECK_EQUAL(rank_one_column, 1);
 }
