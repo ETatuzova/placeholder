@@ -20,6 +20,7 @@ macro(define_runtime_algebra_test name)
     target_include_directories(${test_name} PRIVATE
             "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
             "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>"
+            "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../../test_tools/include>"
 
             ${Boost_INCLUDE_DIRS})
 

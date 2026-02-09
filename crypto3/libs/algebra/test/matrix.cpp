@@ -39,6 +39,8 @@
 
 #include <nil/crypto3/algebra/fields/goldilocks.hpp>
 
+#include <nil/crypto3/test_tools/extended_log_fixture.hpp>
+
 using namespace nil::crypto3::algebra;
 
 using field = fields::goldilocks;
@@ -91,6 +93,8 @@ static_assert(rref(m1) == matrix<value, 3, 3> {{{1, 0, -1}, {0, 1, 2}, {0, 0, 0}
 
 static_assert(rank(m1) == 2, "rank");
 
+
+BOOST_GLOBAL_FIXTURE(ExtendedLogFixture);
 BOOST_AUTO_TEST_SUITE(matrix_test)
     using matrix_2_2 = matrix<value, 2, 2>;
     using matrix_2_2 = matrix<value, 2, 2>;
@@ -230,6 +234,137 @@ BOOST_AUTO_TEST_CASE(rank){
     dynamic_matrix id = identity_dmatrix<value>(10);
     std::size_t rank_id = id.rank();
     BOOST_CHECK_EQUAL(rank_id, 10);
+
+    dynamic_matrix full_rank(3, 5, {
+        { -1, 1, 0, 0, 0 },
+        { 1, 0, 0, 1, 0 },
+        { 2, 0, 0, 0, 1 }
+    });
+    std::size_t rank_full = full_rank.rank();
+    BOOST_CHECK_EQUAL(rank_full, 3);
+
+    dynamic_matrix one_row(1, 3, {{ {1, -2, 1} }});
+    std::size_t rank_one_row = one_row.rank();
+    BOOST_CHECK_EQUAL(rank_one_row, 1);
+
+    // TODO: Fix matrix brace initializer
+    dynamic_matrix one_column(3, 1);
+    one_column[0][0] = 1;
+    one_column[1][0] = -2;
+    one_column[2][0] = 1;
+
+    std::size_t rank_one_column = one_column.rank();
+    BOOST_CHECK_EQUAL(rank_one_column, 1);
+}
+
+BOOST_AUTO_TEST_CASE(right_kernel_basis){
+    dynamic_matrix a(2, 3, {{ {1, 2, 3}, {4, 5, 6} }});
+    auto basis_a = a.right_kernel_basis();
+    BOOST_CHECK(basis_a.size() == a.columns_amount() - a.rank());
+    std::stringstream ss_a;
+    ss_a << "Right kernel basis for matrix a: " << std::endl;
+    for( auto vec: basis_a ){
+        ss_a << "[ ";
+        for( auto val: vec ){
+            ss_a << val << " ";
+        }
+        ss_a << "] " << std::endl;
+    }
+    BOOST_LOG_TRIVIAL(trace) << ss_a.str() << std::endl;
+    for( auto vec: basis_a ){
+        dynamic_matrix vec_matrix(vec.size(), 1);
+        for( std::size_t i = 0; i < vec.size(); ++i ){
+            vec_matrix[i][0] = vec[i];
+        }
+        dynamic_matrix result = a * vec_matrix;
+        for( std::size_t i = 0; i < result.column_size; ++i ){
+            BOOST_CHECK(result[i][0] == 0);
+        }
+    }
+    //check that the basis vectors are linearly independent
+    dynamic_matrix rref_a(basis_a.size(), 3, basis_a);
+    BOOST_LOG_TRIVIAL(trace) << "Basis size = " << basis_a.size() << " basis rank = " << rref_a.rank() << std::endl;
+    BOOST_CHECK(rref_a.rank() == basis_a.size());
+
+    dynamic_matrix b(2,4, {{ {1, 2, 3, 4}, {5, 6, 7, 8} }});
+    auto basis_b = b.right_kernel_basis();
+    BOOST_CHECK(basis_b.size() == b.columns_amount() - b.rank());
+    std::stringstream ss_b;
+    ss_b << "Right kernel basis for matrix b: " << std::endl;
+    for( auto vec: basis_b ){
+        ss_b << "[ ";
+        for( auto val: vec ){
+            ss_b << val << " ";
+        }
+        ss_b << "] " << std::endl;
+    }
+    BOOST_LOG_TRIVIAL(trace) << ss_b.str() << std::endl;
+    dynamic_matrix rref_b(basis_b.size(), 4, basis_b);
+    BOOST_CHECK(rref_b.rank() == basis_b.size());
+
+    for( auto vec: basis_b ){
+        dynamic_matrix vec_matrix(vec.size(), 1);
+        for( std::size_t i = 0; i < vec.size(); ++i ){
+            vec_matrix[i][0] = vec[i];
+        }
+        dynamic_matrix result = b * vec_matrix;
+        for( std::size_t i = 0; i < result.column_size; ++i ){
+            BOOST_CHECK(result[i][0] == 0);
+        }
+    }
+
+    dynamic_matrix c(3,5, {{ {1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}, {5, 6, 7, 8, 9} }});
+    auto basis_c = c.right_kernel_basis();
+    BOOST_CHECK(basis_c.size() == c.columns_amount() - c.rank());
+    std::stringstream ss_c;
+    ss_c << "Right kernel basis for matrix c: " << std::endl;
+    for( auto vec: basis_c ){
+        ss_c << "[ ";
+        for( auto val: vec ){
+            ss_c << val << " ";
+        }
+        ss_c << "] " << std::endl;
+    }
+    BOOST_LOG_TRIVIAL(trace) << ss_c.str() << std::endl;
+    dynamic_matrix rref_c(basis_c.size(), 4, basis_c);
+    BOOST_CHECK(rref_c.rank() == basis_c.size());
+    for( auto vec: basis_c ){
+        dynamic_matrix vec_matrix(vec.size(), 1);
+        for( std::size_t i = 0; i < vec.size(); ++i ){
+            vec_matrix[i][0] = vec[i];
+        }
+        dynamic_matrix result = c * vec_matrix;
+        for( std::size_t i = 0; i < result.column_size; ++i ){
+            BOOST_CHECK(result[i][0] == 0);
+        }
+    }
+
+    dynamic_matrix d(3,5, {{1,1,2,3,4}, {1,1,2,3,4}, {5,5,6,7,8}});
+    auto basis_d = d.right_kernel_basis();
+    BOOST_CHECK(basis_d.size() == d.columns_amount() - d.rank());
+    std::stringstream ss_d;
+    ss_d << "Right kernel basis for matrix d: " << std::endl;
+    for( auto vec: basis_d ){
+        ss_d << "[ ";
+        for( auto val: vec ){
+            ss_d << val << " ";
+        }
+        ss_d << "] " << std::endl;
+    }
+    BOOST_LOG_TRIVIAL(trace) << ss_d.str() << std::endl;
+    dynamic_matrix rref_d(basis_d.size(), d.columns_amount(), basis_d);
+    BOOST_LOG_TRIVIAL(trace) << "Basis size = " << basis_d.size() << " basis rank = " << rref_d.rank() << std::endl;
+    BOOST_CHECK(rref_d.rank() == basis_d.size());
+    for( auto vec: basis_d ){
+        dynamic_matrix vec_matrix(vec.size(), 1);
+        for( std::size_t i = 0; i < vec.size(); ++i ){
+            vec_matrix[i][0] = vec[i];
+        }
+        dynamic_matrix result = d * vec_matrix;
+        for( std::size_t i = 0; i < result.column_size; ++i ){
+            BOOST_CHECK(result[i][0] == 0);
+        }
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

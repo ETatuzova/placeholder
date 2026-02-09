@@ -29,6 +29,7 @@
 #include <vector>
 #include <tuple>
 #include <execution>
+#include <set>
 
 #include <nil/crypto3/algebra/vector/utility.hpp>
 #include <nil/crypto3/algebra/vector/dvector.hpp>
@@ -57,7 +58,21 @@ namespace nil::crypto3::algebra {
 
         // Constructor with initialization
         dmatrix(std::size_t N, std::size_t M, const data_type &init_data)
-            : column_size(N), row_size(M), dvector<dvector<T>>(init_data) {}
+            : column_size(N), row_size(M), dvector<dvector<T>>(N, dvector<T>(M)) {
+                for (std::size_t i = 0; i < N; ++i) {
+                    for (std::size_t j = 0; j < M; ++j) {
+                        (*this)[i][j] = init_data[i][j];
+                    }
+                }
+            }
+
+        std::size_t rows_amount() const {
+            return column_size;
+        }
+
+        std::size_t columns_amount() const {
+            return row_size;
+        }
 
 
         dvector<T> row(std::size_t i) const {
@@ -99,6 +114,28 @@ namespace nil::crypto3::algebra {
             return result;
         }
 
+        dvector<T> operator*(const dvector<T> &vec) const {
+            assert (row_size == vec.size());
+            dvector<T> result(column_size);
+            for (std::size_t i = 0; i < column_size; ++i) {
+                result[i] = 0;
+                for (std::size_t j = 0; j < row_size; ++j) {
+                    result[i] += (*this)[i][j] * vec[j];
+                }
+            }
+            return result;
+        }
+
+        dmatrix<T> operator*(const T &scalar) const {
+            dmatrix<T> result(column_size, row_size);
+            for (std::size_t i = 0; i < column_size; ++i) {
+                for (std::size_t j = 0; j < row_size; ++j) {
+                    result[i][j] = (*this)[i][j] * scalar;
+                }
+            }
+            return result;
+        }
+
         T determinant() const {
             assert (column_size == row_size);
             T det = 1;
@@ -134,28 +171,97 @@ namespace nil::crypto3::algebra {
         std::size_t rank() const {
             dvector<dvector<T>> tmp = *this; // Make a copy to perform row operations
             std::size_t rank = 0;
-            std::size_t min_size = std::min(column_size, row_size);
 
-            for (std::size_t i = 0; i < min_size; ++i) {
+            std::size_t current_row = 0;
+            for (std::size_t i = 0; i < row_size; ++i) {
                 // Find pivot
-                std::size_t pivot = i;
+                std::size_t pivot = current_row;
                 while (pivot < column_size && tmp[pivot][i] == 0) pivot++;
                 if (pivot == column_size) continue; // No pivot in this column
 
-                if (pivot != i) {
-                    std::swap(tmp[i], tmp[pivot]);
+                if (pivot != current_row) {
+                    std::swap(tmp[current_row], tmp[pivot]);
+                }
+
+                // Normalize current row
+                T pivot_value = tmp[current_row][i];
+                for (std::size_t k = i; k < row_size; ++k) {
+                    tmp[current_row][k] /= pivot_value;
                 }
 
                 // Eliminate below
-                for (std::size_t j = i + 1; j < column_size; ++j) {
-                    T factor = tmp[j][i] / tmp[i][i];
+                for (std::size_t j = current_row + 1; j < column_size; ++j) {
+                    T factor = tmp[j][i] / tmp[current_row][i];
                     for (std::size_t k = i; k < row_size; ++k) {
-                        tmp[j][k] -= factor * tmp[i][k];
+                        tmp[j][k] -= factor * tmp[current_row][k];
                     }
                 }
                 rank++;
+                current_row++;
             }
+
             return rank;
+        }
+
+        dvector<dvector<T>> right_kernel_basis(){
+            dvector<dvector<T>> tmp = *this; // Make a copy to perform
+            std::vector<std::size_t> basis_coords;
+            std::size_t row = 0;
+
+            for( std::size_t col = 0; col < row_size && row < column_size; ++col ){
+                // Find pivot
+                std::size_t pivot = row;
+                while( pivot < column_size && tmp[pivot][col] == 0 ) pivot++;
+                if( pivot == column_size ) continue; // No pivot in this column
+
+                if( pivot != row ){
+                    std::swap( tmp[row], tmp[pivot] );
+                }
+
+                // Normalize current
+                T pivot_value = tmp[row][col];
+                for( std::size_t k = col; k < row_size; ++k ){
+                    tmp[row][k] /= pivot_value;
+                }
+
+                basis_coords.push_back(col);
+
+                // Eliminate below
+                for( std::size_t j = row + 1; j < column_size; ++j ){
+                    T factor = tmp[j][col] / tmp[row][col];
+                    for( std::size_t k = col; k < row_size; ++k ){
+                        tmp[j][k] -= factor * tmp[row][k];
+                    }
+                }
+                row++;
+            }
+
+            // Eliminate above to get row echelon form
+            for( std::size_t i = row; i > 0; --i ){
+                std::size_t current_row = i - 1;
+                std::size_t pivot_col = basis_coords[current_row];
+                for( std::size_t j = 0; j < current_row; ++j ){
+                    T factor = tmp[j][pivot_col] / tmp[current_row][pivot_col];
+                    for( std::size_t k = pivot_col; k < row_size; ++k ){
+                        tmp[j][k] -= factor * tmp[current_row][k];
+                    }
+                }
+            }
+
+            dvector<dvector<T>> kernel_basis;
+            for( std::size_t col = 0; col < row_size; ++col ){
+                if( std::find(basis_coords.begin(), basis_coords.end(), col) != basis_coords.end() ) continue; // Skip pivot columns
+
+                dvector<T> basis_vector(row_size);
+                basis_vector[col] = 1; // Free variable
+
+                for( std::size_t pivot_row = 0; pivot_row < basis_coords.size(); ++pivot_row ){
+                    std::size_t pivot_col = basis_coords[pivot_row];
+                    basis_vector[pivot_col] = -tmp[pivot_row][col];
+                }
+                kernel_basis.push_back(basis_vector);
+            }
+            return kernel_basis;
         }
     };
 
